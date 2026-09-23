@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vote For The Crook - Limited Drop</title>
+    <meta
+      name="description"
+      content="Limited Vote For The Crook merch drop. Secure Stripe checkout."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #111215;
+        --accent: #d0442a;
+        --accent-2: #ff9a1f;
+        --line: rgba(22, 25, 28, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family: Manrope, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 8% 10%, #fff5da 0%, transparent 36%),
+          radial-gradient(circle at 90% 88%, #f6d9c2 0%, transparent 40%),
+          linear-gradient(160deg, #efe9de 0%, #e6dfd1 100%);
+      }
+
+      .bg-grid {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        background-size: 26px 26px;
+        mask-image: radial-gradient(circle at center, black 48%, transparent 92%);
+      }
+
+      .page {
+        width: min(1140px, 92vw);
+        margin: 2rem auto 2.5rem;
+        display: grid;
+        gap: 1rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .ticker {
+        border: 1px solid var(--line);
+        background: rgba(16, 18, 20, 0.92);
+        color: #f8f3e8;
+        border-radius: 12px;
+        padding: 0.6rem 1rem;
+        overflow: hidden;
+      }
+
+      .ticker p {
+        margin: 0;
+        white-space: nowrap;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        font-weight: 800;
+        animation: ticker 16s linear infinite;
+      }
+
+      .hero {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(249, 241, 229, 0.9));
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: 0 28px 64px rgba(10, 12, 14, 0.16);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+      }
+
+      .copy {
+        padding: clamp(1.2rem, 3vw, 2.5rem);
+      }
+
+      .tag {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #a33b25;
+      }
+
+      h1 {
+        font-family: Anton, sans-serif;
+        font-size: clamp(2.5rem, 7vw, 6rem);
+        line-height: 0.9;
+        letter-spacing: 0.03em;
+        margin: 0.5rem 0 0;
+      }
+
+      .lead {
+        margin: 0.92rem 0 0;
+        max-width: 47ch;
+        color: rgba(17, 18, 21, 0.82);
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+        margin-top: 1.2rem;
+      }
+
+      .btn {
+        text-decoration: none;
+        font-weight: 800;
+        border-radius: 12px;
+        padding: 0.86rem 1.2rem;
+        transition: transform 180ms ease, filter 180ms ease;
+      }
+
+      .btn.primary {
+        background: linear-gradient(135deg, var(--accent) 0%, #dd6221 100%);
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(208, 68, 42, 0.32);
+      }
+
+      .btn.ghost {
+        color: #181818;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.64);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.03);
+      }
+
+      .art {
+        position: relative;
+        background: linear-gradient(180deg, #111 0%, #24292d 100%);
+        padding: clamp(0.8rem, 2vw, 1.15rem);
+        display: grid;
+        place-items: center;
+      }
+
+      .stamp {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: linear-gradient(135deg, #fbce66 0%, var(--accent-2) 100%);
+        color: #171717;
+        font-weight: 800;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        border-radius: 999px;
+        padding: 0.44rem 0.62rem;
+        transform: rotate(-12deg);
+      }
+
+      .art img {
+        width: 100%;
+        max-width: 470px;
+        border-radius: 13px;
+        display: block;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .strip {
+        background: rgba(17, 18, 20, 0.94);
+        color: #f5f2e8;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 0.95rem 1.05rem;
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        font-weight: 700;
+      }
+
+      @keyframes ticker {
+        0% {
+          transform: translateX(0);
+        }
+
+        100% {
+          transform: translateX(-40%);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .ticker p {
+          animation-duration: 20s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+
+    <main class="page">
+      <section class="ticker">
+        <p>LIMITED DROP - FAST SHIPPING - STRIPE SECURE CHECKOUT - LIMITED DROP</p>
+      </section>
+
+      <section class="hero">
+        <div class="copy">
+          <p class="tag">Limited Merch Drop</p>
+          <h1>VOTE FOR THE CROOK</h1>
+          <p class="lead">
+            Grab the official tee and campaign extras before this run closes.
+            Stripe-secure checkout, fast shipping, and a loud message.
+          </p>
+
+          <div class="cta-row">
+            <a
+              class="btn primary"
+              href="https://buy.stripe.com/REPLACE_TSHIRT_PAYMENT_LINK"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Buy The Tee</a
+            >
+            <a class="btn ghost" href="/index.html">View Full Store</a>
+          </div>
+        </div>
+
+        <div class="art">
+          <span class="stamp">LIMITED RUN</span>
+          <img
+            src="assets/tshirt.png"
+            alt="Vote For The Crook official shirt"
+          />
+        </div>
+      </section>
+
+      <section class="strip">
+        <span>Unisex fit S-3XL</span>
+        <span>U.S. shipping from $5.95</span>
+        <span>14-day returns on unworn items</span>
+      </section>
+    </main>
+  </body>
+</html>
