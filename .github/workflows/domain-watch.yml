@@ -20,6 +20,9 @@ jobs:
     env:
       DOMAIN: ${{ github.event.inputs.domain || 'cleofields.com' }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Install whois
         run: |
           sudo apt-get update
@@ -33,6 +36,7 @@ jobs:
 
           ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           issue_title="Domain Watch: ${DOMAIN}"
+          repo="${GITHUB_REPOSITORY}"
 
           whois_out="$(whois "$DOMAIN" 2>/dev/null || true)"
 
@@ -57,7 +61,7 @@ jobs:
             fi
           fi
 
-          issue_number="$(gh issue list --state open --search "${issue_title} in:title" --json number,title --jq '.[] | select(.title == "'"$issue_title"'") | .number' | head -n1 || true)"
+          issue_number="$(gh issue list -R "$repo" --state open --search "${issue_title} in:title" --json number,title --jq '.[] | select(.title == "'"$issue_title"'") | .number' | head -n1 || true)"
 
           if [[ -z "$issue_number" ]]; then
             body=$(cat <<EOF
@@ -76,12 +80,12 @@ jobs:
           EOF
           )
 
-            gh issue create --title "$issue_title" --body "$body" >/dev/null
+            gh issue create -R "$repo" --title "$issue_title" --body "$body" >/dev/null
             echo "Created tracking issue for ${DOMAIN}"
             exit 0
           fi
 
-          current_body="$(gh issue view "$issue_number" --json body --jq '.body')"
+          current_body="$(gh issue view -R "$repo" "$issue_number" --json body --jq '.body')"
           previous_state="$(printf '%s' "$current_body" | sed -nE 's/.*<!-- last_state:([^ ]+) -->.*/\1/p' | head -n1 || true)"
           previous_raw="$(printf '%s' "$current_body" | sed -nE 's/.*<!-- last_raw_status:(.*) -->.*/\1/p' | head -n1 || true)"
 
@@ -101,7 +105,7 @@ jobs:
           EOF
           )
 
-          gh issue edit "$issue_number" --body "$new_body" >/dev/null
+          gh issue edit -R "$repo" "$issue_number" --body "$new_body" >/dev/null
 
           if [[ "$state" != "$previous_state" ]] || [[ "$raw_status" != "$previous_raw" ]]; then
             change_msg=$(cat <<EOF
@@ -114,7 +118,7 @@ jobs:
           EOF
           )
 
-            gh issue comment "$issue_number" --body "$change_msg" >/dev/null
+            gh issue comment -R "$repo" "$issue_number" --body "$change_msg" >/dev/null
             echo "Status changed: ${previous_state:-unknown} -> ${state}"
           else
             echo "No status change: ${state}"
@@ -130,6 +134,6 @@ jobs:
           This is a high-priority acquisition window.
           EOF
           )
-            gh issue comment "$issue_number" --body "$alert_msg" >/dev/null
+            gh issue comment -R "$repo" "$issue_number" --body "$alert_msg" >/dev/null
             echo "Alert comment posted for ${state}"
           fi
