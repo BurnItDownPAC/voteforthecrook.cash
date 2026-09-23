@@ -1,0 +1,135 @@
+name: Domain Watch
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Domain to check"
+        required: false
+        default: "cleofields.com"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      DOMAIN: ${{ github.event.inputs.domain || 'cleofields.com' }}
+    steps:
+      - name: Install whois
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y whois
+
+      - name: Check domain status and update issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          issue_title="Domain Watch: ${DOMAIN}"
+
+          whois_out="$(whois "$DOMAIN" 2>/dev/null || true)"
+
+          if [[ -z "$whois_out" ]]; then
+            state="unknown"
+            raw_status=""
+          else
+            raw_status="$(echo "$whois_out" | sed -nE 's/^Domain Status:[[:space:]]*([^ ]+).*/\1/ip' | tr '\n' ',' | sed 's/,$//')"
+
+            if echo "$whois_out" | grep -Eqi 'no match for|not found|status:[[:space:]]*available'; then
+              state="available"
+            elif echo "$raw_status" | tr '[:upper:]' '[:lower:]' | grep -q 'pendingdelete'; then
+              state="pendingDelete"
+            elif echo "$raw_status" | tr '[:upper:]' '[:lower:]' | grep -q 'redemptionperiod'; then
+              state="redemptionPeriod"
+            elif echo "$raw_status" | tr '[:upper:]' '[:lower:]' | grep -q 'clienthold'; then
+              state="clientHold"
+            elif [[ -n "$raw_status" ]]; then
+              state="other"
+            else
+              state="unknown"
+            fi
+          fi
+
+          issue_number="$(gh issue list --state open --search "${issue_title} in:title" --json number,title --jq '.[] | select(.title == "'"$issue_title"'") | .number' | head -n1 || true)"
+
+          if [[ -z "$issue_number" ]]; then
+            body=$(cat <<EOF
+          Domain watcher is active for **${DOMAIN}**.
+
+          - Current state: \
+            **${state}**
+          - Raw status lines: \
+            ${raw_status:-none}
+          - Last checked (UTC): \
+            ${ts}
+
+          <!-- last_state:${state} -->
+          <!-- last_raw_status:${raw_status} -->
+          <!-- last_checked:${ts} -->
+          EOF
+          )
+
+            gh issue create --title "$issue_title" --body "$body" >/dev/null
+            echo "Created tracking issue for ${DOMAIN}"
+            exit 0
+          fi
+
+          current_body="$(gh issue view "$issue_number" --json body --jq '.body')"
+          previous_state="$(printf '%s' "$current_body" | sed -nE 's/.*<!-- last_state:([^ ]+) -->.*/\1/p' | head -n1 || true)"
+          previous_raw="$(printf '%s' "$current_body" | sed -nE 's/.*<!-- last_raw_status:(.*) -->.*/\1/p' | head -n1 || true)"
+
+          new_body=$(cat <<EOF
+          Domain watcher is active for **${DOMAIN}**.
+
+          - Current state: \
+            **${state}**
+          - Raw status lines: \
+            ${raw_status:-none}
+          - Last checked (UTC): \
+            ${ts}
+
+          <!-- last_state:${state} -->
+          <!-- last_raw_status:${raw_status} -->
+          <!-- last_checked:${ts} -->
+          EOF
+          )
+
+          gh issue edit "$issue_number" --body "$new_body" >/dev/null
+
+          if [[ "$state" != "$previous_state" ]] || [[ "$raw_status" != "$previous_raw" ]]; then
+            change_msg=$(cat <<EOF
+          Status change detected for **${DOMAIN}** at ${ts}.
+
+          - Previous state: ${previous_state:-unknown}
+          - New state: ${state}
+          - Previous raw status: ${previous_raw:-none}
+          - New raw status: ${raw_status:-none}
+          EOF
+          )
+
+            gh issue comment "$issue_number" --body "$change_msg" >/dev/null
+            echo "Status changed: ${previous_state:-unknown} -> ${state}"
+          else
+            echo "No status change: ${state}"
+          fi
+
+          if [[ "$state" == "pendingDelete" || "$state" == "available" ]]; then
+            alert_msg=$(cat <<EOF
+          Alert for **${DOMAIN}**:
+
+          - State is now **${state}**
+          - Checked at ${ts}
+
+          This is a high-priority acquisition window.
+          EOF
+          )
+            gh issue comment "$issue_number" --body "$alert_msg" >/dev/null
+            echo "Alert comment posted for ${state}"
+          fi

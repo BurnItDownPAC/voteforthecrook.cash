@@ -131,3 +131,28 @@ After deploy, verify:
 Optional checks:
 
 - Run `curl -I https://voteforthecrook.cash` and confirm headers like `content-security-policy` and `strict-transport-security`.
+
+## 10) 24/7 domain watcher (runs in GitHub, not on your laptop)
+
+This repo now includes a scheduled workflow:
+
+- `.github/workflows/domain-watch.yml`
+
+What it does:
+
+1. Runs every 30 minutes in GitHub Actions.
+2. Checks WHOIS status for `cleofields.com`.
+3. Creates/updates an issue named `Domain Watch: cleofields.com`.
+4. Posts a comment when status changes.
+5. Posts an alert comment when status reaches `pendingDelete` or `available`.
+
+How to use:
+
+1. Push this repository to GitHub.
+2. Open the **Actions** tab and enable workflows if prompted.
+3. Run **Domain Watch** once manually from **Run workflow** to initialize tracking.
+4. Watch the issue `Domain Watch: cleofields.com` for updates.
+
+To monitor a different domain:
+
+- Use **Run workflow** and set the `domain` input.
