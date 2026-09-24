@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vote For The Crook Mug</title>
+    <meta name="description" content="The Vote For The Crook ceramic mug — Louisiana political history for your morning coffee." />
+    <link rel="canonical" href="https://voteforthecrook.cash/mug.html" />
+    <meta name="theme-color" content="#13362b" />
+    <meta property="og:type" content="product" />
+    <meta property="og:title" content="Vote For The Crook Mug" />
+    <meta property="og:description" content="A piece of Louisiana political history, now fit for your morning coffee." />
+    <meta property="og:image" content="https://voteforthecrook.cash/assets/mug.png" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><text y=%2250%22 font-size=%2250%22>$</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260924-14" />
+  </head>
+  <body>
+    <header class="detail-header">
+      <a class="brand-link" href="index.html" aria-label="Vote For The Crook home">
+        <img src="assets/logo-edwin.png" alt="" /><span>Vote For The Crook</span>
+      </a>
+      <a class="shop-link" href="index.html">Shop all <span aria-hidden="true">→</span></a>
+    </header>
+
+    <main class="page product-detail-page">
+      <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Shop</a><span aria-hidden="true">/</span><span>Mug</span></nav>
+
+      <section class="product-detail-grid" aria-labelledby="product-title">
+        <div class="product-gallery">
+          <figure class="product-detail-media image-frame image-frame-light">
+            <img src="assets/mug.png" alt="White Vote For The Crook ceramic mug" />
+          </figure>
+        </div>
+
+        <aside class="product-detail-info">
+          <h1 class="product-title" id="product-title">Vote For The Crook Mug</h1>
+          <div class="price-row">
+            <p class="price">$20</p>
+          </div>
+          <p class="product-copy">
+            Start the day with one of Louisiana politics’ most unforgettable lines.
+            A bright white ceramic mug finished with the original monochrome artwork.
+          </p>
+
+          <div class="option-summary" aria-label="Selected product option"><span>Style</span><strong>White ceramic</strong></div>
+
+          <a class="buy-btn full" href="https://buy.stripe.com/test_cNieV6cgwbFV9WCa29b7y02" data-stripe-checkout target="_blank" rel="noopener noreferrer">
+            Buy the mug <span aria-hidden="true">→</span>
+          </a>
+          <p class="product-union-note">Everything is printed in a union shop—of course, as the Governor would want.</p>
+
+          <div class="product-accordions">
+            <details open>
+              <summary>Details <span aria-hidden="true"></span></summary>
+              <div class="details-body"><ul>
+                <li>Bright white ceramic finish</li><li>Monochrome wraparound artwork</li>
+                <li>Comfortable C-shaped handle</li><li>Designed in Louisiana</li>
+              </ul></div>
+            </details>
+            <details>
+              <summary>Care <span aria-hidden="true"></span></summary>
+              <div class="details-body"><p>Wash before first use. Hand washing is recommended to keep the artwork looking its best.</p></div>
+            </details>
+            <details>
+              <summary>Shipping <span aria-hidden="true"></span></summary>
+              <div class="details-body"><p>Each mug is made to order. Shipping timing and cost are shown at checkout.</p></div>
+            </details>
+          </div>
+        </aside>
+      </section>
+
+      <section class="next-product" aria-labelledby="next-product-title">
+        <div>
+          <h2 id="next-product-title">Take the campaign on the road.</h2>
+          <a href="tee.html">Shop the tee <span aria-hidden="true">→</span></a>
+        </div>
+        <a class="next-product-image next-product-image-dark" href="tee.html" aria-label="Shop the Vote For The Crook tee"><img src="assets/tee.png" alt="" /></a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-credit">
+        <p>© 2026 Burn It Down PAC.</p>
+        <p>Built with ❤️ and a stubborn demand for something better in New Orleans, Louisiana.</p>
+      </div>
+      <nav class="footer-projects" aria-label="Other projects">
+        <p>Explore our other projects</p>
+        <div class="footer-project-links">
+          <a href="https://yourturnla.org" target="_blank" rel="noopener noreferrer">yourturnla.org</a>
+          <a href="https://backerbase.ai" target="_blank" rel="noopener noreferrer">backerbase.ai</a>
+          <a href="https://nola.vote" target="_blank" rel="noopener noreferrer">nola.vote</a>
+          <a href="https://parishpay.org" target="_blank" rel="noopener noreferrer">parishpay.org</a>
+          <a href="https://runfordscc.org" target="_blank" rel="noopener noreferrer">runfordscc.org</a>
+        </div>
+      </nav>
+    </footer>
+
+    <script>
+      const checkoutLink = document.querySelector('[data-stripe-checkout]');
+      checkoutLink.addEventListener('click', (event) => {
+        if (checkoutLink.href.includes('REPLACE_MUG')) {
+          event.preventDefault();
+          alert('Checkout is in preview mode. Add your Stripe mug link in mug.html to launch.');
+        }
+      });
+    </script>
+  </body>
+</html>

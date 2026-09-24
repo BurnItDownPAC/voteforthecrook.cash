@@ -1,158 +1,66 @@
-# Vote For The Crook - Stripe Merch Store
+# Vote For The Crook
 
-This is a static storefront that uses Stripe Payment Links for checkout.
+Static storefront deployed on Vercel with Stripe-hosted checkout.
 
-## 1) Add product images
+## Run locally
 
-Place your product images at:
+Install dependencies and start Vercel's local development server:
 
-- `assets/tshirt.png`
-- `assets/hat.png`
-- `assets/mug.png`
+```sh
+npm install
+vercel dev
+```
 
-Recommended: around 1200px wide, JPG or PNG.
+The local webhook route needs `STRIPE_WEBHOOK_SECRET` in `.env.local` if you want to test signed Stripe events locally. Never commit that file or the secret.
 
-## 2) Create Stripe Payment Link
+## Storefront
 
-In Stripe Dashboard:
+- `index.html` — homepage
+- `tee.html` — tee details, size selector, and per-size checkout links
+- `mug.html` — mug details and checkout link
+- `thank-you.html` — post-payment confirmation page
+- `api/stripe-webhook.js` — verifies and receives Stripe checkout events
 
-1. Go to **Payments > Payment Links**
-2. Click **Create payment link**
-3. Create/select each product in Stripe
-4. Set price, shipping options, and tax settings
-5. Copy each generated Payment Link URL
+## Stripe status
 
-## 3) Paste your Stripe links
+The storefront currently uses Stripe **sandbox** Payment Links. Sandbox payments cannot charge real cards.
 
-Open `index.html` and replace these:
+Configured checkout behavior:
 
-- `https://buy.stripe.com/REPLACE_TSHIRT_PAYMENT_LINK`
-- `https://buy.stripe.com/REPLACE_HAT_PAYMENT_LINK`
-- `https://buy.stripe.com/REPLACE_MUG_PAYMENT_LINK`
+- Tee sizes S–3XL and mug are separate Stripe products
+- Adjustable quantity from 1–10
+- U.S. shipping addresses only
+- $5.95 standard U.S. shipping
+- Successful payments redirect to `/thank-you.html`
+- The production webhook receives completed and asynchronous checkout results
 
-with your real Stripe URLs.
+The webhook signing secret is stored as the encrypted Vercel Production environment variable `STRIPE_WEBHOOK_SECRET`. Do not place it in HTML or commit it to Git.
 
-## 4) Customize product details
+The webhook currently validates and logs payment events. It does not yet submit orders to a printer, write to an order database, or send custom fulfillment email.
 
-In `index.html`, update:
+## Go live
 
-- Product names and prices
-- Product details text
-- Shipping and returns policy copy
+Test-mode Stripe objects do not become live-mode objects automatically. Before accepting real payments:
 
-## 5) Run locally
+1. Complete Stripe account activation and business verification.
+2. Recreate the products, prices, shipping rate, Payment Links, and webhook in live mode.
+3. Replace the sandbox checkout URLs in `tee.html` and `mug.html` with live URLs.
+4. Replace the Vercel webhook secret with the live endpoint's signing secret.
+5. Decide where sales tax must be collected before enabling Stripe Tax.
+6. Make a small real purchase and confirm checkout, webhook delivery, refund, and fulfillment.
 
-Open `index.html` in your browser, or use a simple static server.
+## Deploy
 
-Landing page:
+Deploy the current directory to production:
 
-- `landing.html` is a focused campaign page with a single main CTA.
-- Keep `index.html` as the full store page.
-- If you want landing as homepage, rename `landing.html` to `index.html` and move the current store page to `shop.html`.
+```sh
+vercel --prod
+```
 
-## 6) Deploy on Vercel
+The custom production domain is `https://voteforthecrook.cash`.
 
-Dashboard method:
+`vercel.json` contains the `www` redirect and security headers.
 
-1. Go to https://vercel.com/new
-2. Import your Git repo (or push this folder to GitHub first)
-3. Vercel auto-detects it as a static site
-4. Click Deploy
+## Domain watcher
 
-CLI method:
-
-1. Install CLI: `npm i -g vercel`
-2. From this folder, run: `vercel`
-3. Follow the prompts once
-4. For production deploys, run: `vercel --prod`
-
-No build step is required for this project.
-
-## 7) Connect custom domain (voteforthecrook.cash)
-
-Do this after your first Vercel deploy succeeds.
-
-In Vercel:
-
-1. Open your project
-2. Go to Settings > Domains
-3. Add:
-	- voteforthecrook.cash
-	- www.voteforthecrook.cash
-
-In Cloudflare DNS (zone: voteforthecrook.cash):
-
-1. Remove conflicting records for @ or www (old A/AAAA/CNAME pointing elsewhere)
-2. Add A record:
-	- Type: A
-	- Name: @
-	- IPv4 address: 76.76.21.21
-	- Proxy status: DNS only (gray cloud)
-3. Add CNAME record:
-	- Type: CNAME
-	- Name: www
-	- Target: cname.vercel-dns.com
-	- Proxy status: DNS only (gray cloud)
-
-Then back in Vercel:
-
-1. Wait for verification (usually a few minutes)
-2. Set voteforthecrook.cash as Primary
-3. Enable redirect from www to apex (or vice versa, your choice)
-
-Notes:
-
-- If Cloudflare proxy is orange-cloud during setup, SSL verification can fail. Keep DNS only until Vercel shows domain as Valid.
-- If you still see Invalid Configuration in Vercel, check for leftover AAAA records at @.
-
-## 8) Other cheap hosts
-
-Good low-cost hosts for static sites:
-
-- Cloudflare Pages (often free tier is enough)
-- Vercel (free tier)
-- GitHub Pages (free)
-
-You only pay Stripe transaction fees when people buy.
-
-## 9) Vercel production hardening
-
-This project includes `vercel.json` with:
-
-- Redirect from `www.voteforthecrook.cash` to `voteforthecrook.cash`
-- Security headers (HSTS, CSP, frame protection, MIME sniff protection)
-
-After deploy, verify:
-
-1. `https://www.voteforthecrook.cash` redirects to `https://voteforthecrook.cash`
-2. Page source includes canonical URL `https://voteforthecrook.cash/`
-3. Social preview tags are present (Open Graph and Twitter)
-
-Optional checks:
-
-- Run `curl -I https://voteforthecrook.cash` and confirm headers like `content-security-policy` and `strict-transport-security`.
-
-## 10) 24/7 domain watcher (runs in GitHub, not on your laptop)
-
-This repo now includes a scheduled workflow:
-
-- `.github/workflows/domain-watch.yml`
-
-What it does:
-
-1. Runs every 30 minutes in GitHub Actions.
-2. Checks WHOIS status for `cleofields.com`.
-3. Creates/updates an issue named `Domain Watch: cleofields.com`.
-4. Posts a comment when status changes.
-5. Posts an alert comment when status reaches `pendingDelete` or `available`.
-
-How to use:
-
-1. Push this repository to GitHub.
-2. Open the **Actions** tab and enable workflows if prompted.
-3. Run **Domain Watch** once manually from **Run workflow** to initialize tracking.
-4. Watch the issue `Domain Watch: cleofields.com` for updates.
-
-To monitor a different domain:
-
-- Use **Run workflow** and set the `domain` input.
+`.github/workflows/domain-watch.yml` checks the configured domain on a schedule and reports changes through a GitHub issue. It is separate from the storefront and checkout.
