@@ -14,19 +14,22 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: domain-watch-${{ github.event.inputs.domain || 'cleofields.com' }}
+  cancel-in-progress: false
+
 jobs:
   watch:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       DOMAIN: ${{ github.event.inputs.domain || 'cleofields.com' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install whois
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y whois
+      - name: Test registry status checker
+        run: python3 -B -m unittest discover -s scripts -p 'test_domain_status.py' -v
 
       - name: Check domain status and update issue
         env:
@@ -38,28 +41,11 @@ jobs:
           issue_title="Domain Watch: ${DOMAIN}"
           repo="${GITHUB_REPOSITORY}"
 
-          whois_out="$(whois "$DOMAIN" 2>/dev/null || true)"
-
-          if [[ -z "$whois_out" ]]; then
-            state="unknown"
-            raw_status=""
-          else
-            raw_status="$(echo "$whois_out" | sed -nE 's/^Domain Status:[[:space:]]*([^ ]+).*/\1/ip' | tr '\n' ',' | sed 's/,$//')"
-
-            if echo "$whois_out" | grep -Eqi 'no match for|not found|status:[[:space:]]*available'; then
-              state="available"
-            elif echo "$raw_status" | tr '[:upper:]' '[:lower:]' | grep -q 'pendingdelete'; then
-              state="pendingDelete"
-            elif echo "$raw_status" | tr '[:upper:]' '[:lower:]' | grep -q 'redemptionperiod'; then
-              state="redemptionPeriod"
-            elif echo "$raw_status" | tr '[:upper:]' '[:lower:]' | grep -q 'clienthold'; then
-              state="clientHold"
-            elif [[ -n "$raw_status" ]]; then
-              state="other"
-            else
-              state="unknown"
-            fi
-          fi
+          # Failed/ambiguous lookups exit before changing the last verified state.
+          result="$(python3 scripts/domain_status.py "$DOMAIN")"
+          state="$(jq -r '.state' <<< "$result")"
+          raw_status="$(jq -r '.statuses | join(", ")' <<< "$result")"
+          source_url="$(jq -r '.source' <<< "$result")"
 
           issue_number="$(gh issue list -R "$repo" --state open --search "${issue_title} in:title" --json number,title --jq '.[] | select(.title == "'"$issue_title"'") | .number' | head -n1 || true)"
 
@@ -69,10 +55,13 @@ jobs:
 
           - Current state: \
             **${state}**
-          - Raw status lines: \
+          - Registry statuses: \
             ${raw_status:-none}
           - Last checked (UTC): \
             ${ts}
+          - Source: ${source_url}
+
+          Availability means the registry returned no domain record; confirm registration with a registrar before purchasing. Earlier WHOIS-based availability alerts may have been false positives.
 
           <!-- last_state:${state} -->
           <!-- last_raw_status:${raw_status} -->
@@ -94,10 +83,13 @@ jobs:
 
           - Current state: \
             **${state}**
-          - Raw status lines: \
+          - Registry statuses: \
             ${raw_status:-none}
           - Last checked (UTC): \
             ${ts}
+          - Source: ${source_url}
+
+          Availability means the registry returned no domain record; confirm registration with a registrar before purchasing. Earlier WHOIS-based availability alerts may have been false positives.
 
           <!-- last_state:${state} -->
           <!-- last_raw_status:${raw_status} -->
@@ -124,14 +116,15 @@ jobs:
             echo "No status change: ${state}"
           fi
 
-          if [[ "$state" == "pendingDelete" || "$state" == "available" ]]; then
+          if [[ "$state" != "$previous_state" ]] && [[ "$state" == "pendingDelete" || "$state" == "available" ]]; then
             alert_msg=$(cat <<EOF
           Alert for **${DOMAIN}**:
 
           - State is now **${state}**
           - Checked at ${ts}
+          - Registry source: ${source_url}
 
-          This is a high-priority acquisition window.
+          A pendingDelete domain is not yet available. An available result means no record was found at the registry; confirm registration with a registrar before purchasing.
           EOF
           )
             gh issue comment -R "$repo" "$issue_number" --body "$alert_msg" >/dev/null

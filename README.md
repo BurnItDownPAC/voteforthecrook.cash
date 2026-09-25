@@ -64,3 +64,17 @@ The custom production domain is `https://voteforthecrook.cash`.
 ## Domain watcher
 
 `.github/workflows/domain-watch.yml` checks the configured domain on a schedule and reports changes through a GitHub issue. It is separate from the storefront and checkout.
+
+The default is `cleofields.com`, scheduled every 30 minutes (GitHub may delay scheduled runs). Both the workflow and local watcher use `scripts/domain_status.py` to query Verisign's registry RDAP service directly for .com/.net domains. Registrar referrals and free-text WHOIS messages are not used.
+
+- A verified registry domain record means registered, including redemption/hold/pending-delete states.
+- Only an HTTP 404 with an RDAP `errorCode` of 404 means no registry record (`available`). Confirm registration with a registrar before buying.
+- Network errors, rate limits, redirects, and malformed responses fail the check without changing the last verified status or sending availability alerts.
+- Alerts are posted when the state changes, not on every run. Email still depends on GitHub issue subscriptions and notification settings; no separate email sender is configured.
+- Older WHOIS-based availability alerts may have been false positives and should not be used as current status.
+
+Check once: `python3 scripts/domain_status.py cleofields.com`
+
+Run regression tests: `python3 -B -m unittest discover -s scripts -p 'test_domain_status.py' -v`
+
+Monitor locally: `bash scripts/watch-domain.sh cleofields.com 300`

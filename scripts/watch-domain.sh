@@ -9,16 +9,22 @@ set -euo pipefail
 
 DOMAIN="${1:-}"
 INTERVAL="${2:-300}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ -z "$DOMAIN" ]]; then
   echo "Usage: $0 <domain> [interval_seconds]"
   exit 1
 fi
 
-if ! command -v whois >/dev/null 2>&1; then
-  echo "Error: 'whois' is required. Install it first."
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: Python 3 is required."
   exit 1
 fi
+if [[ ! "$INTERVAL" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Error: check interval must be a positive integer."
+  exit 1
+fi
+PYTHONPATH="$script_dir" python3 -B -c 'import sys; from domain_status import registry_url; registry_url(sys.argv[1])' "$DOMAIN"
 
 notify() {
   local title="$1"
@@ -26,40 +32,10 @@ notify() {
   osascript -e "display notification \"${message}\" with title \"${title}\"" >/dev/null 2>&1 || true
 }
 
-classify_status() {
-  local whois_out="$1"
-
-  # If registry says no match / not found, domain is likely available.
-  if echo "$whois_out" | grep -Eqi 'no match for|not found|status:\s*available'; then
-    echo "available"
-    return 0
-  fi
-
-  local statuses
-  statuses="$(echo "$whois_out" | sed -nE 's/^Domain Status:[[:space:]]*([^ ]+).*/\1/ip' | tr '[:upper:]' '[:lower:]' | tr '\n' ',')"
-
-  if [[ -z "$statuses" ]]; then
-    echo "unknown"
-    return 0
-  fi
-
-  if echo "$statuses" | grep -q 'pendingdelete'; then
-    echo "pendingDelete"
-  elif echo "$statuses" | grep -q 'redemptionperiod'; then
-    echo "redemptionPeriod"
-  elif echo "$statuses" | grep -q 'clienthold'; then
-    echo "clientHold"
-  elif echo "$statuses" | grep -q 'ok'; then
-    echo "ok"
-  else
-    echo "other:${statuses%,}"
-  fi
-}
-
 last_state=""
 last_raw_status=""
 
-echo "Watching $DOMAIN every ${INTERVAL}s"
+echo "Watching $DOMAIN every ${INTERVAL}s using registry RDAP"
 
 auto_ts() {
   date '+%Y-%m-%d %H:%M:%S'
@@ -68,29 +44,25 @@ auto_ts() {
 while true; do
   ts="$(auto_ts)"
 
-  whois_out="$(whois "$DOMAIN" 2>/dev/null || true)"
-  if [[ -z "$whois_out" ]]; then
-    echo "[$ts] WHOIS empty/unavailable; retrying"
+  if ! result="$(python3 -B "$script_dir/domain_status.py" "$DOMAIN")"; then
+    echo "[$ts] Registry check failed; retaining previous status and retrying"
     sleep "$INTERVAL"
     continue
   fi
 
-  state="$(classify_status "$whois_out")"
-  raw_status="$(echo "$whois_out" | sed -nE 's/^Domain Status:[[:space:]]*([^ ]+).*/\1/ip' | tr '\n' ',' | sed 's/,$//')"
+  state="$(printf '%s' "$result" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')"
+  raw_status="$(printf '%s' "$result" | python3 -c 'import json,sys; print(", ".join(json.load(sys.stdin)["statuses"]))')"
 
   if [[ "$state" != "$last_state" ]] || [[ "$raw_status" != "$last_raw_status" ]]; then
     echo "[$ts] State changed -> $state (${raw_status:-no-status-lines})"
     notify "Domain Watcher" "$DOMAIN -> $state"
+    if [[ "$state" == "available" && "$state" != "$last_state" ]]; then
+      notify "Domain AVAILABLE" "$DOMAIN has no registry record. Confirm with a registrar."
+    fi
     last_state="$state"
     last_raw_status="$raw_status"
   else
     echo "[$ts] $DOMAIN -> $state"
-  fi
-
-  if [[ "$state" == "available" ]]; then
-    echo "[$ts] $DOMAIN appears available."
-    notify "Domain AVAILABLE" "$DOMAIN may be available now"
-    # Keep running in case of false positive / race conditions.
   fi
 
   sleep "$INTERVAL"
